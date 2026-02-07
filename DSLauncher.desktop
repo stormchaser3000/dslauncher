@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.5
+Name=DuckStation Launcher (Unoffocial)
+Comment=Unofficial launcher for the DuckStation PSX Emulator
+Icon=dslauncher
+Exec=dslauncher
+Categories=Game
+
