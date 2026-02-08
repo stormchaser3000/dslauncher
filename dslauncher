@@ -17,123 +17,130 @@ EOD
 )
 
 function main() {
-    setup 
+	setup 
 
-    # If this is the first time this script has been used, then we need select which architecture
-    # we want to use. First, let's make sure we only show architectures that the host machine can
-    # use.
+	# If this is the first time this script has been used, then we need select which architecture
+	# we want to use. First, let's make sure we only show architectures that the host machine can
+	# use.
 
-    if [ ! "$arch" ] # This is the first time running this if $arch is empty
-    then
-	    zenity --info --text "$INFOTEXT" 2> /dev/null
-	    first_run
-    fi
+	if [ ! "$arch" ] # This is the first time running this if $arch is empty
+	then
+		zenity --info --text "$INFOTEXT" 2> /dev/null
+		first_run
+	fi
 
-    if [ -f $dspath ]
-    then
-	    # DuckStation is installed, so check for updates
-	    ds_update
-    else
-	    # DuckStation is not installed, so grab the AppImage and install it
-	    ds_install
-    fi
+    if [ -f "$dspath" ]
+	then
+		if [ "$dsupdate" == "true" ]
+		then
+			# DuckStation is installed, so check for updates
+			ds_update
+		fi
+	else
+		# DuckStation is not installed, so grab the AppImage and install it
+		ds_install
+	fi
 
-    # Run DuckStation
+	# Run DuckStation
 
-    if [ "$run_duckstation" == "true" ]
-    then
-	    $dspath
-    fi
+	if [ "$run_duckstation" == "true" ]
+	then
+		$dspath
+	else
+		echo "This launcher is in testing mode. Not running DuckStation"
+	fi
 }
 
 function setup() {
-    # Variables used throughout the rest of the script
-    zenity_title="Duckstation Launcher"
-    dsdir=$HOME/.local/share/dslauncher
-    dspath=$dsdir/DuckStation.AppImage
-    configdir=$HOME/.config/dslauncher
-    config=$configdir/launcher.conf
+	# Variables used throughout the rest of the script
+	zenity_title="Duckstation Launcher"
+	dsdir=$HOME/.local/share/dslauncher
+	dspath=$dsdir/DuckStation.AppImage
+	configdir=$HOME/.config/dslauncher
+	config=$configdir/launcher.conf
 
-    # The config file is a set of bash variables. Create it if it doesn't exist, then load it.
-    # The config file is used to store which AppImage is to be downloaded (x64, aarch64, etc.)
-    # as well as some other useful options.
+	# The config file is a set of bash variables. Create it if it doesn't exist, then load it.
+	# The config file is used to store which AppImage is to be downloaded (x64, aarch64, etc.)
+	# as well as some other useful options.
 
-    if [ ! -d $configdir ]
-    then
-        mkdir -p $configdir
-    fi
+	if [ ! -d "$configdir" ]
+	then
+		mkdir -p "$configdir"
+	fi
 
-    if [ ! -f $config ]
-    then
-        touch $config
-    fi
+	if [ ! -f "$config" ]
+	then
+		touch "$config"
+	fi
 
-    source $config
+	source "$config"
 }
 
 function first_run() {
-    # Prompt the user for which architecture they want to use
+	# Prompt the user for which architecture they want to use
 
-    # NOTE for distro packagers: If this script fails because it doesn't understand the output from uname -m
-    # then, you will have to patch this function to correctly detect the architecture on your distro.
+	# NOTE for distro packagers: If this script fails because it doesn't understand the output from uname -m
+	# then, you will have to patch this function to correctly detect the architecture on your distro.
 
-    machinearch=$(uname -m)
+	machinearch=$(uname -m)
 
-    case "$machinearch" in
-        "x86_64")
-            archslist="TRUE x64 FALSE x64-SSE2" ;;
-        "aarch64" | "arm64v8")
-            archslist="TRUE aarch64 FALSE armhf" ;;
-        "arm" | "armhf")
-            arch="armhf" ;;
-    esac
+	case "$machinearch" in
+		"x86_64")
+			archslist="TRUE x64 FALSE x64-SSE2" ;;
+		"aarch64" | "arm64v8")
+			archslist="TRUE aarch64 FALSE armhf" ;;
+		"arm" | "armhf")
+			arch="armhf" ;;
+	esac
     
-    # Prompt the user to select the architecture if multiple valid options
-    # were found for the current system.
-    if [ "$archslist" ]
-    then
-        arch=$(zenity --title "$zenity_title" \
-        --text "Multiple DuckStation builds are available for your type of computer. It is recommended you use the default selection, but you may use the others if needed" \
-        --list --radiolist --column "selected" --column "architecture" $archslist 2> /dev/null)
-    fi
+	# Prompt the user to select the architecture if multiple valid options
+	# were found for the current system.
+	if [ "$archslist" ]
+	then
+		arch=$(zenity --title "$zenity_title" \
+		--text "Multiple DuckStation builds are available for your type of computer. It is recommended you use the default selection, but you may use the others if needed" \
+		--list --radiolist --column "selected" --column "architecture" $archslist 2> /dev/null)
+	fi
 
-    if [ ! "$arch" ]
-    then
-        echo "Unsupported processor architecture"
-        exit
-    fi
+	if [ ! "$arch" ]
+	then
+		echo "Unsupported processor architecture"
+		exit
+	fi
 
-    # Save this to the config file so we don't have to ask again.
-    echo "arch=$arch" >> $config
-    echo "dsupdate=true" >> $config # An option to toggle automatic updating
-    echo "run_duckstation=true" >> $config # A value I use in testing
+	# Save this to the config file so we don't have to ask again.
+	{
+		echo "arch=$arch"
+		echo "dsupdate=true" # An option to toggle automatic updating
+		echo "run_duckstation=true" # A value I use in testing
+	} >> "$config"
 }
 
 function ds_install() {
-	if [ ! -x $dspath ]
+	if [ ! -x "$dspath" ]
 	then
-		mkdir -p $HOME/.local/share/dslauncher
-		wget -O $dspath https://github.com/stenzek/duckstation/releases/download/latest/DuckStation-$arch.AppImage
-		chmod u+x $dspath
+		mkdir -p "$HOME/.local/share/dslauncher"
+		wget -O "$dspath" "https://github.com/stenzek/duckstation/releases/download/latest/DuckStation-$arch.AppImage"
+		chmod u+x "$dspath"
 	fi
 }
 
 
 function ds_update() {
 	echo "Downloading latest DuckStation version to check if a newer version is available"
-	wget -O $dsdir/DuckStation-new.AppImage https://github.com/stenzek/duckstation/releases/download/latest/DuckStation-$arch.AppImage &> /dev/null
+	wget -O "$dsdir/DuckStation-new.AppImage" "https://github.com/stenzek/duckstation/releases/download/latest/DuckStation-$arch.AppImage" &> /dev/null
 
-	current_ds_hash=$(sha256sum $dspath | awk '{ print $1; }')
-	new_ds_hash=$(sha256sum $dsdir/DuckStation-new.AppImage | awk '{ print $1; }')
+	current_ds_hash=$(sha256sum "$dspath" | awk '{ print $1; }')
+	new_ds_hash=$(sha256sum "$dsdir/DuckStation-new.AppImage" | awk '{ print $1; }')
 
 	if [ "$current_ds_hash" != "$new_ds_hash" ]
 	then
 		echo "DuckStation has a new version... updating"
-		mv $dsdir/DuckStation-new.AppImage $dspath
-		chmod u+x $dspath
+		mv "$dsdir/DuckStation-new.AppImage" "$dspath"
+		chmod u+x "$dspath"
 	else
 		echo "DuckStation is already up-to-date. Cleaning up"
-		rm $dsdir/DuckStation-new.AppImage
+		rm "$dsdir/DuckStation-new.AppImage"
 	fi
 }
 
