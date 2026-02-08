@@ -43,7 +43,7 @@ function main() {
 
 	# Run DuckStation
 
-	if [ "$run_duckstation" == "true" ]
+	if [ "$run_duckstation" == "true" ] || [ ! "$run_duckstation" ]
 	then
 		$dspath
 	else
@@ -119,8 +119,11 @@ function first_run() {
 function ds_install() {
 	if [ ! -x "$dspath" ]
 	then
+		echo "Downloading DuckStation"
 		mkdir -p "$HOME/.local/share/dslauncher"
-		wget -O "$dspath" "https://github.com/stenzek/duckstation/releases/download/latest/DuckStation-$arch.AppImage"
+		{
+		wget -O "$dspath" "https://github.com/stenzek/duckstation/releases/download/latest/DuckStation-$arch.AppImage" &> /dev/null
+		} | zenity --progress --title "$zenity_title" --text "Downloading DuckStation" 2> /dev/null
 		chmod u+x "$dspath"
 	fi
 }
